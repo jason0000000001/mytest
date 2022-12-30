@@ -2,7 +2,12 @@ from django.contrib import admin
 
 # Register your models here.
 
-from .models import Data
+from .models import Data6
+from .models import User6
+from .models import test
 
-admin.site.register(Data)
+
+admin.site.register(Data6)
+admin.site.register(User6)
+admin.site.register(test)
 
