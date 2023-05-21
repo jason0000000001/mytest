@@ -61,12 +61,17 @@ class Data6(models.Model):
 
 class Medicine(models.Model):
     userid = models.ForeignKey(User6, on_delete=models.CASCADE,default = False)#使用者id 
-    medicine = models.TextField(null=True)
-
+    name = models.TextField(null=True)
+    describe = models.TextField(null=True)
+    dose = models.IntegerField(default=True)
+    hour = models.IntegerField(null=True,blank=True)
+    min = models.IntegerField(null=True,blank=True)
 
     def __str__(self):
-        return self.medicine
+        return self.name
     
+
+
 
 
 class test(models.Model):

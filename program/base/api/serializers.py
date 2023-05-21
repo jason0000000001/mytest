@@ -4,6 +4,7 @@ from base.models import User6
 from base.models import Medicine
 from base.models import test
 
+
 class UserSerializer(ModelSerializer):
     class Meta:
         model = User6
@@ -63,6 +64,9 @@ class RoomheartbeatSerializer(ModelSerializer):
     class Meta:
         model = Data6
         fields = ['heartbeat']
+
+
+
 
 
 '''

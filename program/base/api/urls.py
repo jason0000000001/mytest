@@ -5,6 +5,7 @@ from . import views
 
 urlpatterns = [
     path('', views.getRoutes),
+    path('getmedicine/<str:pk>/', views.get),
     #path('users/', views.getUsers),
     #path('users/<str:pk>/', views.getUser),
     path('users/', views.createUser),
@@ -15,7 +16,9 @@ urlpatterns = [
     # #path('datas/<str:pk>/', views.getRoom),
     path('datas/', views.createRoom),
     path('datas/<str:pk>/', views.updateRoom),
-    path('<str:pk>/medicine/', views.createmedicine),
+    path('<str:pk>/medicine/', views.getmedicine),
+    path('medicine/', views.createmedicine),
+    path('medicine/<str:pk>/', views.updatemedicine),
     #path('datasname/<str:pk>/', views.getRoomname),
     path('datasid/<str:pk>/', views.getRoomid),
     path('history/<str:pk>/', views.gethistory),

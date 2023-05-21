@@ -26,6 +26,10 @@ import plotly.graph_objs as go
 from django.db.models import Q
 from datetime import timedelta
 from plotly.subplots import make_subplots
+import requests 
+from bs4 import BeautifulSoup
+import json
+import urllib.parse
 
 
 @api_view(['GET'])
@@ -40,7 +44,9 @@ def getRoutes(request):
         #'GET /api/datas',
         'GET,POST /api/datas',
         'GET,POST,DELETE /api/datas/:id/',
-        'GET,POST /api/userid/medicine',
+        'GET /api/:id/medicine',
+        'GET,POST /api/medicine',
+        'GET,POST,DELETE /api/medicine/:id/',
         #'GET /api/datasname/:name/',
         'GET /api/datasid/:userid/',
         'GET /api/:userid/weight/',
@@ -52,10 +58,88 @@ def getRoutes(request):
         'start_time,end_time格式:YYYY-MM-DDTHH-MM-SS',
         '可以不需要時間格式:YYYY-MM-DD',
         'GET /api/history/:id/',
+        'GET /api/getmedicine/:id/',
         #'GET /api/datas/:id/',
         #'DELETE /api/deleteusers/:id/data',
     ]
     return Response(routes)
+
+
+@api_view(['GET'])
+def get(reqeest,pk):
+    keyword = pk
+    url = 'https://www.cgmh.org.tw/tw/Services/DrugSearch?keyword=' + urllib.parse.quote(keyword)
+    # 設定網頁請求的 headers 參數，模擬瀏覽器請求
+    headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+    }
+
+    try:
+        # 向指定 url 發送請求，使用 headers 參數模擬瀏覽器請求
+        res = requests.get(url, headers=headers)
+        # 解析網頁內容，使用 html.parser 解析器
+        soup = BeautifulSoup(res.text, 'html.parser')
+
+        # 創建一個空字典，存放解析後的資料
+        data = {}
+        # 找到網頁中的前 5 個 <br> 標籤，並依次取出相鄰的兩個兄弟節點作為 key 和 value
+        br_tags = soup.find_all('br')[:5]
+        for tag in br_tags:
+            key, value = tag.previous_sibling.strip(), tag.next_sibling.strip()
+            # 將取得的 key 和 value 存入字典中
+            data[key] = value
+
+        # 取得圖片連結
+        img_tags = soup.find_all('img', src=True)
+        img_link = None
+        for img in img_tags:
+            if 'stor/picture/PGG002M' in img['src']:
+                img_link = img['src']
+                break
+
+        # 將圖片連結加入資料字典
+        data['img_link'] = img_link
+
+        # 將資料字典轉成 JSON 格式輸出
+        json_data = json.dumps(data, ensure_ascii=False)
+        json_data1 = json_data.split(':')
+        name1 = json_data1[1]
+        sname1 = json_data1[2]
+        indications1 = json_data1[3]
+        side_effect1 = json_data1[4]
+        name0 = name1.split(',')
+        sname0 = sname1.split(',')
+        indications0 = indications1.split(',')
+        side_effect0 = side_effect1.split(',')
+        name = name0[0]
+        sname = sname0[0]
+        indications = indications0[0]
+        side_effect = side_effect0[0]
+        name = name.replace('"',' ')
+        sname = sname.replace('"',' ')
+        indications = indications.replace('"',' ')
+        side_effect = side_effect.replace('"',' ')
+        print(name)
+        print(sname)
+        print(indications)
+        print(side_effect)
+        serializer_data = {
+                name,
+                sname,
+                indications,
+                side_effect
+        }
+        '''
+        'name': name
+        'sname': sname
+        'indications': indications
+        'side_effect': side_effect
+        '''
+        return Response(serializer_data)
+
+    except Exception as e:
+        # 若發生例外情況，輸出錯誤訊息到終端機
+        return Response(e)
 
 
 @api_view(['GET'])
@@ -151,7 +235,7 @@ def updateUser(request, pk):
 
 	#return Response(serializer.data)
 
-
+'''
 @api_view(['POST', 'GET'])
 def createmedicine(request,pk):
     if request.method == 'POST':
@@ -163,6 +247,52 @@ def createmedicine(request,pk):
         medicine = Medicine.objects.filter(userid=pk)
         serializer = MedicineSerializer(medicine, many=True)
         return Response(serializer.data)
+'''
+
+
+@api_view(['GET'])
+def getmedicine(request, pk):
+    medicine = Medicine.objects.filter(userid=pk)
+    serializer = MedicineSerializer(medicine, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['POST', 'GET'])
+def createmedicine(request):
+    if request.method == 'POST':
+        serializer = MedicineSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response('Medicine succsesfully create!')
+    else:
+        medicine = Medicine.objects.all()
+        serializer = MedicineSerializer(medicine, many=True)
+        return Response(serializer.data)
+
+
+@api_view(['POST', 'GET', 'DELETE'])
+def updatemedicine(request, pk):
+    if request.method == 'POST':
+        medicine = Medicine.objects.get(id=pk)
+        serializer = MedicineSerializer(instance=medicine, data=request.data)
+        if serializer.is_valid():
+            userid = serializer.validated_data['userid']
+            name = serializer.validated_data['name']
+            describe = serializer.validated_data['describe']
+            dose = serializer.validated_data['dose']
+            hour = serializer.validated_data['hour']
+            min = serializer.validated_data['min']
+            serializer.save()
+            return Response('Medicine succsesfully update!')
+    elif request.method == 'DELETE':
+        medicine = Medicine.objects.get(id=pk)
+        medicine.delete()
+        return Response('Medicine succsesfully delete!')
+    else:
+        medicine = Medicine.objects.get(id=pk)
+        serializer = MedicineSerializer(medicine, many=False)
+        return Response(serializer.data)
+
 
 '''
 @api_view(['DELETE', 'GET'])
